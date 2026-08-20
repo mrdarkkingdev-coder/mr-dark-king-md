@@ -1,10 +1,15 @@
 const { Telegraf } = require('telegraf');
 require('dotenv').config();
 
-// Import commands
-const menu = require('./commands/menu.js');
-const owner = require('./commands/owner.js');
-const ping = require('./commands/ping.js');
+// Import commands (with fallback if files don't exist yet)
+let menu, owner, ping;
+try {
+    menu = require('./commands/menu.js');
+    owner = require('./commands/owner.js');
+    ping = require('./commands/ping.js');
+} catch (e) {
+    console.warn('⚠️  Warning: Command files not found, basic commands only available');
+}
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_NAME = "MR DARK KING MD";
@@ -68,17 +73,50 @@ bot.help(async (ctx) => {
 
 // Menu command
 bot.command('menu', async (ctx) => {
-    await menu.executeTelegram(ctx);
+    if (menu) {
+        await menu.executeTelegram(ctx);
+    } else {
+        const menuText = `
+📋 *Main Menu* 📋
+
+🎯 *Available Commands:*
+  /start - Welcome message
+  /ping - Check bot status
+  /status - Bot status
+  /owner - Owner information
+  /channel - Join our WhatsApp channel
+  /help - Get help
+
+Type any command to get started!
+`;
+        ctx.reply(menuText, { parse_mode: "Markdown" });
+    }
 });
 
 // Ping command
 bot.command('ping', async (ctx) => {
-    await ping.executeTelegram(ctx);
+    if (ping) {
+        await ping.executeTelegram(ctx);
+    } else {
+        ctx.reply('🏓 *Pong!* Bot is online and responding!', { parse_mode: "Markdown" });
+    }
 });
 
 // Owner command
 bot.command('owner', async (ctx) => {
-    await owner.executeTelegram(ctx);
+    if (owner) {
+        await owner.executeTelegram(ctx);
+    } else {
+        const ownerText = `
+👑 *Owner Information* 👑
+
+📞 *Owner:* ${process.env.BOT_OWNER || 'Mr Dark King Dev'}
+☎️ *Phone:* ${process.env.BOT_OWNER_PHONE || 'Available in WhatsApp'}
+
+📱 Contact owner via WhatsApp for support!
+`;
+        ctx.reply(ownerText, { parse_mode: "Markdown" });
+    }
 });
 
 // Channel command
@@ -100,7 +138,8 @@ bot.on('text', (ctx) => {
 
 // Error handler
 bot.catch((err, ctx) => {
-    console.error(`❌ Telegram Error for ${ctx.updateType}`, err);
+    console.error(`❌ Telegram Error for ${ctx.updateType}:`, err);
+    ctx.reply('❌ An error occurred. Please try again.');
 });
 
 // Launch bot
@@ -109,14 +148,20 @@ const startTelegramBot = async () => {
         console.log(`🤖 ${BOT_NAME} Telegram Bot starting...`);
         await bot.launch();
         console.log(`✅ ${BOT_NAME} Telegram Bot is running!`);
+        
+        // Set up graceful shutdown
+        process.once('SIGINT', () => {
+            console.log('Stopping Telegram Bot...');
+            bot.stop('SIGINT');
+        });
+        process.once('SIGTERM', () => {
+            console.log('Stopping Telegram Bot...');
+            bot.stop('SIGTERM');
+        });
     } catch (error) {
         console.error('Failed to start Telegram bot:', error);
-        process.exit(1);
+        throw error;
     }
 };
-
-// Graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 module.exports = { startTelegramBot, bot };
