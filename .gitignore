@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# WhatsApp Bot Auth (sensitive data)
+auth_info_baileys/
