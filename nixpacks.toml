@@ -1,8 +1,2 @@
-[build]
-pkgs = ["nodejs_20"]
-
-[build.env]
-NODE_ENV = "production"
-
-[start]
-cmd = "npm start"
+[variables]
+NODE_VERSION = "20"
